@@ -1,5 +1,51 @@
 {
   "item.capturenet.animal_capture_net": "Animal Capture Net",
   "item.capturenet.animal_capture_net.tooltip.empty": "Empty — right-click an animal to capture",
-  "item.capturenet.animal_capture_net.tooltip.contains": "Contains: %s"
+  "item.capturenet.animal_capture_net.tooltip.contains": "Contains: %s",
+
+  "capturenet.tooltip.baby": "baby",
+
+  "capturenet.variant.cat.tabby": "Tabby",
+  "capturenet.variant.cat.black": "Black",
+  "capturenet.variant.cat.red": "Red",
+  "capturenet.variant.cat.siamese": "Siamese",
+  "capturenet.variant.cat.british_shorthair": "British Shorthair",
+  "capturenet.variant.cat.calico": "Calico",
+  "capturenet.variant.cat.persian": "Persian",
+  "capturenet.variant.cat.ragdoll": "Ragdoll",
+  "capturenet.variant.cat.white": "White",
+  "capturenet.variant.cat.jellie": "Jellie",
+  "capturenet.variant.cat.all_black": "All Black",
+
+  "capturenet.variant.wolf.pale": "Pale",
+  "capturenet.variant.wolf.ashen": "Ashen",
+  "capturenet.variant.wolf.black": "Black",
+  "capturenet.variant.wolf.chestnut": "Chestnut",
+  "capturenet.variant.wolf.rusty": "Rusty",
+  "capturenet.variant.wolf.snowy": "Snowy",
+  "capturenet.variant.wolf.spotted": "Spotted",
+  "capturenet.variant.wolf.striped": "Striped",
+  "capturenet.variant.wolf.woods": "Woods",
+
+  "capturenet.variant.frog.temperate": "Temperate",
+  "capturenet.variant.frog.warm": "Warm",
+  "capturenet.variant.frog.cold": "Cold",
+
+  "capturenet.variant.mooshroom.red": "Red",
+  "capturenet.variant.mooshroom.brown": "Brown",
+
+  "capturenet.variant.fox.red": "Red",
+  "capturenet.variant.fox.snow": "Snow",
+
+  "capturenet.variant.axolotl.lucy": "Lucy",
+  "capturenet.variant.axolotl.wild": "Wild",
+  "capturenet.variant.axolotl.gold": "Gold",
+  "capturenet.variant.axolotl.cyan": "Cyan",
+  "capturenet.variant.axolotl.blue": "Blue",
+
+  "capturenet.variant.parrot.red": "Red and Blue",
+  "capturenet.variant.parrot.blue": "Blue",
+  "capturenet.variant.parrot.green": "Green",
+  "capturenet.variant.parrot.yellow": "Yellow and Blue",
+  "capturenet.variant.parrot.gray": "Gray"
 }

@@ -7,8 +7,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -137,9 +142,43 @@ public class AnimalCaptureNetItem extends Item {
             return;
         }
         EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(captured.entityType());
-        if (type != null) {
-            tooltip.accept(Component.translatable("item.capturenet.animal_capture_net.tooltip.contains",
-                type.getDescription()).withStyle(ChatFormatting.AQUA));
+        if (type == null) return;
+
+        CompoundTag nbt = captured.entityNbt();
+        Component variant = EntityTooltipAdapters.variantFor(captured.entityType(), nbt);
+        Component customName = readCustomName(context, nbt);
+        boolean baby = EntityTooltipAdapters.isBaby(nbt);
+
+        // Compose "[Name · ][Variant ]EntityType[ · baby]" into the %s arg of the contains key.
+        MutableComponent contents = Component.empty();
+        if (customName != null) {
+            contents.append(customName).append(Component.literal(" · "));
+        }
+        if (variant != null) {
+            contents.append(variant).append(Component.literal(" "));
+        }
+        contents.append(type.getDescription());
+        if (baby) {
+            contents.append(Component.literal(" · "))
+                    .append(Component.translatable("capturenet.tooltip.baby"));
+        }
+
+        tooltip.accept(Component.translatable("item.capturenet.animal_capture_net.tooltip.contains",
+            contents).withStyle(ChatFormatting.AQUA));
+    }
+
+    /** CustomName in saved entity NBT is stored as a component-as-tag (string for legacy, compound
+     *  for modern). Decode via ComponentSerialization with registry-aware ops so style refs resolve.
+     *  Returns null on any parse failure — tooltip falls back to no name. */
+    private static Component readCustomName(TooltipContext context, CompoundTag nbt) {
+        if (!nbt.contains("CustomName")) return null;
+        try {
+            Tag tag = nbt.get("CustomName");
+            if (tag == null) return null;
+            RegistryOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, context.registries());
+            return ComponentSerialization.CODEC.parse(ops, tag).result().orElse(null);
+        } catch (Throwable t) {
+            return null;
         }
     }
 }
