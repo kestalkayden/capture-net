@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "capturenet:item/animal_capture_net"
+  }
+}
