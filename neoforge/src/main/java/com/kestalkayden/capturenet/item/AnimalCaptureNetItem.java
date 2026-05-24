@@ -118,11 +118,18 @@ public class AnimalCaptureNetItem extends Item {
 
     private static boolean isCapturable(ItemStack stack, LivingEntity entity) {
         if (stack.has(CaptureNetDataComponents.CAPTURED_ENTITY)) return false;
+        // Hardcoded absolute blocks — not overridable by always_capturable tag.
         if (entity instanceof Player) return false;
         if (entity instanceof EnderDragon) return false;
         if (entity instanceof WitherBoss) return false;
         if (entity instanceof Warden) return false;
-        return entity.getType().getCategory() != MobCategory.MONSTER;
+
+        EntityType<?> type = entity.getType();
+        // Datapack blocklist takes precedence over the whitelist below — both can target the
+        // same entity, in which case the modpack author's intent is "block this."
+        if (type.builtInRegistryHolder().is(CaptureNetTags.CANNOT_CAPTURE)) return false;
+        if (type.builtInRegistryHolder().is(CaptureNetTags.ALWAYS_CAPTURABLE)) return true;
+        return type.getCategory() != MobCategory.MONSTER;
     }
 
     @Override
