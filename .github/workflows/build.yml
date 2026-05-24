@@ -66,6 +66,7 @@ jobs:
           path: neoforge/build/libs
 
       - name: publish fabric
+        id: publish-fabric
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: capture-nets
@@ -84,7 +85,19 @@ jobs:
           version-type: release
           java: 25
 
+      # mc-publish v3.3 doesn't pass per-version environment metadata, and Modrinth no longer
+      # has a project-level default. Without this PATCH, every upload defaults to "unsupported"
+      # on both sides until manually flipped on the listing page.
+      - name: patch modrinth fabric env metadata
+        if: success() && steps.publish-fabric.outputs.modrinth-version != ''
+        run: |
+          curl -fsS -X PATCH "https://api.modrinth.com/v2/version/${{ steps.publish-fabric.outputs.modrinth-version }}" \
+            -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"client_side":"required","server_side":"required"}'
+
       - name: publish neoforge
+        id: publish-neoforge
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: capture-nets
@@ -102,3 +115,11 @@ jobs:
             26.1.2
           version-type: release
           java: 25
+
+      - name: patch modrinth neoforge env metadata
+        if: success() && steps.publish-neoforge.outputs.modrinth-version != ''
+        run: |
+          curl -fsS -X PATCH "https://api.modrinth.com/v2/version/${{ steps.publish-neoforge.outputs.modrinth-version }}" \
+            -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"client_side":"required","server_side":"required"}'
