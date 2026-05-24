@@ -4,6 +4,7 @@ import java.util.function.Consumer;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -64,6 +65,10 @@ public class AnimalCaptureNetItem extends Item {
         if (typeId == null) return InteractionResult.PASS;
 
         stack.set(CaptureNetDataComponents.CAPTURED_ENTITY, new CapturedEntity(typeId, nbt));
+        // Enchantment glint as a "this net is loaded" visual cue. The modern 1.21+/26.1
+        // approach: set the vanilla glint-override component rather than overriding isFoil(),
+        // which has flaky method-resolution under DataComponent refactors.
+        stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
         player.setItemInHand(hand, stack);
         if (player.containerMenu != null) {
             player.containerMenu.broadcastChanges();
@@ -74,7 +79,7 @@ public class AnimalCaptureNetItem extends Item {
             target.getX(), target.getY() + target.getBbHeight() / 2.0, target.getZ(),
             16, 0.3, 0.3, 0.3, 0.05);
         level.playSound(null, target.blockPosition(),
-            SoundEvents.WOOL_PLACE, SoundSource.PLAYERS, 0.5F, 1.2F);
+            SoundEvents.BUNDLE_INSERT, SoundSource.PLAYERS, 0.6F, 1.0F);
 
         target.discard();
         return InteractionResult.SUCCESS;
@@ -105,9 +110,10 @@ public class AnimalCaptureNetItem extends Item {
             spawned.getX(), spawned.getY() + 0.5, spawned.getZ(),
             12, 0.2, 0.2, 0.2, 0.02);
         level.playSound(null, spawnPos,
-            SoundEvents.WOOL_PLACE, SoundSource.PLAYERS, 0.5F, 0.9F);
+            SoundEvents.BUNDLE_DROP_CONTENTS, SoundSource.PLAYERS, 0.6F, 1.0F);
 
         stack.remove(CaptureNetDataComponents.CAPTURED_ENTITY);
+        stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
         if (context.getPlayer() != null) {
             Player p = context.getPlayer();
             p.setItemInHand(context.getHand(), stack);
