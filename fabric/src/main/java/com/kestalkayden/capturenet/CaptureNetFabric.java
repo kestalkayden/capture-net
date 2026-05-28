@@ -3,12 +3,17 @@ package com.kestalkayden.capturenet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kestalkayden.capturenet.item.AnimalCaptureNetItem;
 import com.kestalkayden.capturenet.item.CaptureNetDataComponents;
 import com.kestalkayden.capturenet.item.CaptureNetItems;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.ItemStack;
 
 public class CaptureNetFabric implements ModInitializer {
     public static final String MOD_ID = "capturenet";
@@ -23,6 +28,18 @@ public class CaptureNetFabric implements ModInitializer {
 
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(output -> {
             output.accept(CaptureNetItems.ANIMAL_CAPTURE_NET);
+        });
+
+        // Pre-interact hook: runs before entity.interact(), so the net wins against mobs
+        // whose own mobInteract would otherwise consume the click — villagers (trade GUI),
+        // allays (accept-item), modded creatures with custom right-click. interactLivingEntity
+        // alone isn't enough: vanilla Player.interactOn calls entity.interact() first, and
+        // any SUCCESS there short-circuits the item handler.
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if (!(entity instanceof LivingEntity living)) return InteractionResult.PASS;
+            ItemStack stack = player.getItemInHand(hand);
+            if (!(stack.getItem() instanceof AnimalCaptureNetItem)) return InteractionResult.PASS;
+            return AnimalCaptureNetItem.tryCapture(stack, player, living, hand);
         });
     }
 }

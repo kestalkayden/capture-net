@@ -52,6 +52,18 @@ public class AnimalCaptureNetItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
+        // Kept as a safety net: the loader's pre-interact hook (PlayerInteractEvent.EntityInteract
+        // on NeoForge) is what actually wins against mobs that override mobInteract — villagers,
+        // allays, and any modded creature with custom right-click. If for some reason that event
+        // doesn't fire (foreign call path, mod intercept), this still captures normally.
+        return tryCapture(stack, player, target, hand);
+    }
+
+    /** Capture {@code target} if it's eligible. SUCCESS on capture, PASS when the net is
+     *  full / target is blocked / entity type is unknown. Safe to call from a pre-interact
+     *  event: a PASS result means "let vanilla handle it" (so trade GUIs still open with a
+     *  filled net, etc.); SUCCESS means "we consumed the click." */
+    public static InteractionResult tryCapture(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
         if (target.level().isClientSide()) {
             return isCapturable(stack, target) ? InteractionResult.SUCCESS : InteractionResult.PASS;
         }
