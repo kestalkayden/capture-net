@@ -1,6 +1,6 @@
 {
-  "item.capturenet.animal_capture_net": "Animal Capture Net",
-  "item.capturenet.animal_capture_net.tooltip.empty": "Empty — right-click an animal to capture",
+  "item.capturenet.animal_capture_net": "Capture Net",
+  "item.capturenet.animal_capture_net.tooltip.empty": "Empty — right-click a mob to capture",
   "item.capturenet.animal_capture_net.tooltip.contains": "Contains: %s",
 
   "capturenet.tooltip.baby": "baby",

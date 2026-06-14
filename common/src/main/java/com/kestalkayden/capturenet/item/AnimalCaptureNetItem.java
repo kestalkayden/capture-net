@@ -37,6 +37,8 @@ import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.storage.TagValueOutput;
 
+import com.kestalkayden.capturenet.CaptureNetRefs;
+
 /** Reusable capture-and-release item. Empty net + right-click on a capturable entity stores
  *  the entity's full NBT in a data component and removes it from the world. Filled net +
  *  right-click on a block face spawns the entity on top of that block and empties the net.
@@ -52,10 +54,11 @@ public class AnimalCaptureNetItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        // Kept as a safety net: the loader's pre-interact hook (PlayerInteractEvent.EntityInteract
-        // on NeoForge) is what actually wins against mobs that override mobInteract — villagers,
-        // allays, and any modded creature with custom right-click. If for some reason that event
-        // doesn't fire (foreign call path, mod intercept), this still captures normally.
+        // Safety-net path. The loader pre-interact hooks (Fabric UseEntityCallback / NeoForge
+        // PlayerInteractEvent.EntityInteract) are what actually win against mobs whose own
+        // mobInteract consumes the click first — villagers (trade GUI), allays (item swap), and
+        // any modded creature with custom right-click. This still captures normally if for some
+        // reason that hook didn't fire (foreign call path, mod intercept).
         return tryCapture(stack, player, target, hand);
     }
 
@@ -69,18 +72,24 @@ public class AnimalCaptureNetItem extends Item {
         }
         if (!isCapturable(stack, target)) return InteractionResult.PASS;
 
+        // MC 26.1 routes entity save through ValueOutput; TagValueOutput is the CompoundTag-
+        // backed impl. ProblemReporter.DISCARDING silently swallows validation issues —
+        // appropriate here since we trust the entity is well-formed.
         TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING,
             target.level().registryAccess());
         target.save(out);
         CompoundTag nbt = out.buildResult();
         Identifier typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
-        if (typeId == null) return InteractionResult.PASS;
+        if (typeId == null) return InteractionResult.PASS;  // Unknown entity type — safety bail
 
-        stack.set(CaptureNetDataComponents.CAPTURED_ENTITY, new CapturedEntity(typeId, nbt));
+        stack.set(CaptureNetRefs.CAPTURED_ENTITY.get(), new CapturedEntity(typeId, nbt));
         // Enchantment glint as a "this net is loaded" visual cue. The modern 1.21+/26.1
         // approach: set the vanilla glint-override component rather than overriding isFoil(),
         // which has flaky method-resolution under DataComponent refactors.
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        // Force the held-item slot to re-sync. In survival the next broadcastChanges
+        // catches the component update, but creative mode's client-authoritative
+        // inventory can drop it without this prod.
         player.setItemInHand(hand, stack);
         if (player.containerMenu != null) {
             player.containerMenu.broadcastChanges();
@@ -100,7 +109,7 @@ public class AnimalCaptureNetItem extends Item {
     @Override
     public InteractionResult useOn(UseOnContext context) {
         ItemStack stack = context.getItemInHand();
-        CapturedEntity captured = stack.get(CaptureNetDataComponents.CAPTURED_ENTITY);
+        CapturedEntity captured = stack.get(CaptureNetRefs.CAPTURED_ENTITY.get());
         if (captured == null) return InteractionResult.PASS;
         if (context.getLevel().isClientSide()) return InteractionResult.SUCCESS;
 
@@ -124,7 +133,7 @@ public class AnimalCaptureNetItem extends Item {
         level.playSound(null, spawnPos,
             SoundEvents.BUNDLE_DROP_CONTENTS, SoundSource.PLAYERS, 0.6F, 1.0F);
 
-        stack.remove(CaptureNetDataComponents.CAPTURED_ENTITY);
+        stack.remove(CaptureNetRefs.CAPTURED_ENTITY.get());
         stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
         if (context.getPlayer() != null) {
             Player p = context.getPlayer();
@@ -135,7 +144,7 @@ public class AnimalCaptureNetItem extends Item {
     }
 
     private static boolean isCapturable(ItemStack stack, LivingEntity entity) {
-        if (stack.has(CaptureNetDataComponents.CAPTURED_ENTITY)) return false;
+        if (stack.has(CaptureNetRefs.CAPTURED_ENTITY.get())) return false;
         // Hardcoded absolute blocks — not overridable by always_capturable tag.
         if (entity instanceof Player) return false;
         if (entity instanceof EnderDragon) return false;
@@ -154,7 +163,7 @@ public class AnimalCaptureNetItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display,
                                  Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, display, tooltip, flag);
-        CapturedEntity captured = stack.get(CaptureNetDataComponents.CAPTURED_ENTITY);
+        CapturedEntity captured = stack.get(CaptureNetRefs.CAPTURED_ENTITY.get());
         if (captured == null) {
             tooltip.accept(Component.translatable("item.capturenet.animal_capture_net.tooltip.empty")
                 .withStyle(ChatFormatting.GRAY));
@@ -168,6 +177,7 @@ public class AnimalCaptureNetItem extends Item {
         Component customName = readCustomName(context, nbt);
         boolean baby = EntityTooltipAdapters.isBaby(nbt);
 
+        // Compose "[Name · ][Variant ]EntityType[ · baby]" into the %s arg of the contains key.
         MutableComponent contents = Component.empty();
         if (customName != null) {
             contents.append(customName).append(Component.literal(" · "));
@@ -185,6 +195,9 @@ public class AnimalCaptureNetItem extends Item {
             contents).withStyle(ChatFormatting.AQUA));
     }
 
+    /** CustomName in saved entity NBT is stored as a component-as-tag (string for legacy, compound
+     *  for modern). Decode via ComponentSerialization with registry-aware ops so style refs resolve.
+     *  Returns null on any parse failure — tooltip falls back to no name. */
     private static Component readCustomName(TooltipContext context, CompoundTag nbt) {
         if (!nbt.contains("CustomName")) return null;
         try {

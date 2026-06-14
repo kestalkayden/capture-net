@@ -28,6 +28,10 @@ public class CaptureNetNeoForge {
         CaptureNetItems.ITEMS.register(modBus);
         CaptureNetDataComponents.COMPONENTS.register(modBus);
 
+        // Bind the loader-agnostic ref (lazy — resolves after the deferred registry fires) so
+        // shared common code reaches the data component without importing NeoForge registration.
+        CaptureNetRefs.CAPTURED_ENTITY = () -> CaptureNetDataComponents.CAPTURED_ENTITY;
+
         modBus.addListener(CaptureNetNeoForge::onBuildCreativeTabs);
         // Game-event bus, not the mod bus: PlayerInteractEvent fires on the NeoForge bus.
         NeoForge.EVENT_BUS.addListener(CaptureNetNeoForge::onEntityInteract);

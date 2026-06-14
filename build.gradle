@@ -28,6 +28,6 @@ allprojects {
 }
 
 tasks.register('buildAll') {
-    dependsOn ':fabric:build', ':neoforge:build'
-    description = 'Builds both Fabric and NeoForge versions.'
+    dependsOn ':common:build', ':fabric:build', ':neoforge:build'
+    description = 'Builds both loaders, plus the common platform-agnostic purity-check module.'
 }

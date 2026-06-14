@@ -18,5 +18,6 @@ plugins {
 
 rootProject.name = 'capturenet'
 
+include 'common'
 include 'fabric'
 include 'neoforge'

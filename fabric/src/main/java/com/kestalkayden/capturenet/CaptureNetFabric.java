@@ -26,6 +26,10 @@ public class CaptureNetFabric implements ModInitializer {
         CaptureNetDataComponents.register();
         CaptureNetItems.register();
 
+        // Bind the loader-agnostic ref so shared common code (AnimalCaptureNetItem) reaches the
+        // data component without importing this loader's registration class.
+        CaptureNetRefs.CAPTURED_ENTITY = () -> CaptureNetDataComponents.CAPTURED_ENTITY;
+
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(output -> {
             output.accept(CaptureNetItems.ANIMAL_CAPTURE_NET);
         });
