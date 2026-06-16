@@ -35,7 +35,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 
 import com.kestalkayden.capturenet.CaptureNetRefs;
 
@@ -116,7 +118,9 @@ public class AnimalCaptureNetItem extends Item {
         ServerLevel level = (ServerLevel) context.getLevel();
         BlockPos spawnPos = context.getClickedPos().relative(context.getClickedFace());
 
-        Entity spawned = EntityType.loadEntityRecursive(captured.entityNbt(), level, EntitySpawnReason.LOAD, e -> {
+        // MC 26.2 routes entity load through ValueInput (mirror of the save-side ValueOutput above).
+        ValueInput in = TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), captured.entityNbt());
+        Entity spawned = EntityType.loadEntityRecursive(in, level, EntitySpawnReason.LOAD, e -> {
             e.setPos(
                 spawnPos.getX() + 0.5,
                 spawnPos.getY(),
