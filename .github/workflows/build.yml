@@ -51,8 +51,8 @@ jobs:
       - id: s
         shell: bash
         run: |
-          # neoforge_enabled=false (gradle.properties) holds NeoForge build/publish off while
-          # NeoForged hasn't shipped this MC version. Flip it to true once a 26.2 build lands.
+          # neoforge_enabled (gradle.properties) gates the NeoForge build/publish: set it false to
+          # hold NeoForge off while NeoForged hasn't shipped a build for the target MC version.
           nf=$(grep -E '^neoforge_enabled=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
           [ "$nf" = "false" ] && NFE=false || NFE=true
           ver=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
@@ -146,8 +146,8 @@ jobs:
           files: fabric/build/libs/!(*-@(sources|javadoc)).jar
           loaders: fabric
           game-versions: |
-            26.2-rc-2
-          version-type: beta
+            26.2
+          version-type: release
           game-version-filter: none
           java: 25
       - name: patch modrinth fabric env metadata
@@ -168,8 +168,8 @@ jobs:
           files: neoforge/build/libs/!(*-@(sources|javadoc)).jar
           loaders: neoforge
           game-versions: |
-            26.2-rc-2
-          version-type: beta
+            26.2
+          version-type: release
           game-version-filter: none
           java: 25
       - name: patch modrinth neoforge env metadata
@@ -206,8 +206,8 @@ jobs:
           files: fabric/build/libs/!(*-@(sources|javadoc)).jar
           loaders: fabric
           game-versions: |
-            26.2-rc-2
-          version-type: beta
+            26.2
+          version-type: release
           game-version-filter: none
           java: 25
       - name: curseforge neoforge
@@ -220,8 +220,8 @@ jobs:
           files: neoforge/build/libs/!(*-@(sources|javadoc)).jar
           loaders: neoforge
           game-versions: |
-            26.2-rc-2
-          version-type: beta
+            26.2
+          version-type: release
           game-version-filter: none
           java: 25
 
@@ -253,5 +253,5 @@ jobs:
           files: |
             fabric/build/libs/!(*-@(sources|javadoc)).jar
             neoforge/build/libs/!(*-@(sources|javadoc)).jar
-          version-type: beta
+          version-type: release
           java: 25
