@@ -148,6 +148,7 @@ jobs:
           game-versions: |
             26.2-rc-2
           version-type: beta
+          game-version-filter: none
           java: 25
       - name: patch modrinth fabric env metadata
         if: ${{ needs.plan.outputs.fabric == 'true' && steps.mr-fabric.outputs.modrinth-version != '' }}
@@ -169,6 +170,7 @@ jobs:
           game-versions: |
             26.2-rc-2
           version-type: beta
+          game-version-filter: none
           java: 25
       - name: patch modrinth neoforge env metadata
         if: ${{ needs.plan.outputs.neoforge == 'true' && steps.mr-neoforge.outputs.modrinth-version != '' }}
@@ -206,6 +208,7 @@ jobs:
           game-versions: |
             26.2-rc-2
           version-type: beta
+          game-version-filter: none
           java: 25
       - name: curseforge neoforge
         if: needs.plan.outputs.neoforge == 'true'
@@ -219,6 +222,7 @@ jobs:
           game-versions: |
             26.2-rc-2
           version-type: beta
+          game-version-filter: none
           java: 25
 
   # GitHub Release is per-version (one release, both loader jars attached) — not per-loader.
