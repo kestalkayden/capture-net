@@ -31,3 +31,7 @@ run/
 # claude code harness state
 
 .claude/
+
+# decompiled vanilla MC reference sources (kept locally, never committed)
+
+/net/
