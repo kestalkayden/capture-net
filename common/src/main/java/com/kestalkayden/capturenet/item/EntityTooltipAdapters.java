@@ -25,7 +25,7 @@ public final class EntityTooltipAdapters {
     static {
         register("sheep", nbt -> {
             if (!nbt.contains("Color")) return null;
-            byte b = nbt.getByteOr("Color", (byte) 0);
+            byte b = nbt.getByte("Color");
             DyeColor color = DyeColor.byId(b & 0xFF);
             if (color == null) return null;
             return Component.translatable("color.minecraft." + color.getName());
@@ -43,7 +43,7 @@ public final class EntityTooltipAdapters {
 
         register("axolotl", nbt -> {
             if (!nbt.contains("Variant")) return null;
-            int v = nbt.getIntOr("Variant", 0);
+            int v = nbt.getInt("Variant");
             return switch (v) {
                 case 0 -> Component.translatable("capturenet.variant.axolotl.lucy");
                 case 1 -> Component.translatable("capturenet.variant.axolotl.wild");
@@ -56,7 +56,7 @@ public final class EntityTooltipAdapters {
 
         register("parrot", nbt -> {
             if (!nbt.contains("Variant")) return null;
-            int v = nbt.getIntOr("Variant", 0);
+            int v = nbt.getInt("Variant");
             return switch (v) {
                 case 0 -> Component.translatable("capturenet.variant.parrot.red");
                 case 1 -> Component.translatable("capturenet.variant.parrot.blue");
@@ -78,7 +78,7 @@ public final class EntityTooltipAdapters {
      *  for cats). Translation key format: capturenet.variant.<entity>.<path>. */
     private static @Nullable Component namespacedVariant(CompoundTag nbt, String entityKey) {
         if (!nbt.contains("variant")) return null;
-        String raw = nbt.getStringOr("variant", "");
+        String raw = nbt.getString("variant");
         if (raw.isEmpty()) return null;
         int colon = raw.indexOf(':');
         String path = colon >= 0 ? raw.substring(colon + 1) : raw;
@@ -89,7 +89,7 @@ public final class EntityTooltipAdapters {
      *  Translation key format: capturenet.variant.<entity>.<type>. */
     private static @Nullable Component stringTypeVariant(CompoundTag nbt, String entityKey) {
         if (!nbt.contains("Type")) return null;
-        String type = nbt.getStringOr("Type", "");
+        String type = nbt.getString("Type");
         if (type.isEmpty()) return null;
         return Component.translatable("capturenet.variant." + entityKey + "." + type);
     }
@@ -103,6 +103,6 @@ public final class EntityTooltipAdapters {
      *  the entity doesn't have a baby form or was saved as adult. */
     public static boolean isBaby(CompoundTag nbt) {
         if (!nbt.contains("Age")) return false;
-        return nbt.getIntOr("Age", 0) < 0;
+        return nbt.getInt("Age") < 0;
     }
 }

@@ -1,6 +1,6 @@
 package com.kestalkayden.capturenet.item;
 
-import java.util.function.Consumer;
+import java.util.List;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -32,7 +32,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 
 import com.kestalkayden.capturenet.CaptureNetRefs;
@@ -157,12 +156,12 @@ public class AnimalCaptureNetItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display,
-                                 Consumer<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, display, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context,
+                                 List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
         CapturedEntity captured = stack.get(CaptureNetRefs.CAPTURED_ENTITY.get());
         if (captured == null) {
-            tooltip.accept(Component.translatable("item.capturenet.animal_capture_net.tooltip.empty")
+            tooltip.add(Component.translatable("item.capturenet.animal_capture_net.tooltip.empty")
                 .withStyle(ChatFormatting.GRAY));
             return;
         }
@@ -188,7 +187,7 @@ public class AnimalCaptureNetItem extends Item {
                     .append(Component.translatable("capturenet.tooltip.baby"));
         }
 
-        tooltip.accept(Component.translatable("item.capturenet.animal_capture_net.tooltip.contains",
+        tooltip.add(Component.translatable("item.capturenet.animal_capture_net.tooltip.contains",
             contents).withStyle(ChatFormatting.AQUA));
     }
 

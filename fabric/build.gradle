@@ -1,9 +1,9 @@
-// Loom 1.10.x is applied via the legacy buildscript classpath, not the `plugins {}` DSL.
+// Loom 1.7.x is applied via the legacy buildscript classpath, not the `plugins {}` DSL.
 // Reason: the Fabric maven only publishes plugin *markers* for loom 1.14.0+, and loom 1.14+
-// added a `notObfuscated()` guard that wrongly trips on obfuscated 1.21.5 (those builds target
+// added a `notObfuscated()` guard that wrongly trips on obfuscated 1.21.4 (those builds target
 // the 26.x non-obfuscated game, refuse officialMojangMappings, and drop the modImplementation
-// configuration needed to remap intermediary access wideners). Loom 1.10.1 has no such guard and
-// builds obfuscated 1.21.5, but has no plugin marker — so we pull its main artifact directly here.
+// configuration needed to remap intermediary access wideners). Loom 1.7.4 has no such guard and
+// builds obfuscated 1.21.4, but has no plugin marker — so we pull its main artifact directly here.
 buildscript {
     repositories {
         maven { url = 'https://maven.fabricmc.net/' }
@@ -29,7 +29,7 @@ sourceSets.main.java.srcDir "${rootProject.projectDir}/common/src/main/java"
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
-    // 1.21.5 is OBFUSCATED — map to Mojang's official names so common/ (written against official
+    // 1.21.4 is OBFUSCATED — map to Mojang's official names so common/ (written against official
     // names) compiles. modImplementation (below) lets loom remap intermediary access wideners.
     mappings loom.officialMojangMappings()
 
