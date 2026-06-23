@@ -7,8 +7,9 @@
   "item.capturenet.capture_crate.tooltip.empty": "Empty — right-click mobs to fill",
   "item.capturenet.capture_crate.tooltip.count": "Holds: %s/%s",
   "item.capturenet.capture_crate.tooltip.selected": "▶ %s",
-  "item.capturenet.capture_crate.tooltip.cycle_hint": "Sneak + right-click air to cycle",
+  "item.capturenet.capture_crate.tooltip.cycle_hint": "Sneak + right-click to cycle",
   "item.capturenet.capture_crate.selected": "Selected: %s",
+  "item.capturenet.capture_crate.discarded": "Discarded an unreadable entry",
 
   "capturenet.tooltip.baby": "baby",
 
