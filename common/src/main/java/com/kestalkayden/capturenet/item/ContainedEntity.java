@@ -13,20 +13,16 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 
-/** One entity stored inside a Containment Box.
+/** One entity stored inside a Capture Crate.
  *
- *  <p>The split between the persistent and network forms is deliberate (the "B" architecture):
  *  <ul>
- *    <li>{@code nbt} — the entity's full save NBT (trades, inventory, attributes). Kept only in
- *        the {@link #CODEC persistent} form, so it lives on disk / server-side. Release reads it
- *        back via {@code loadEntityRecursive}, which only ever happens on the server.</li>
- *    <li>{@code name}/{@code variant}/{@code baby} — cheap display bits, precomputed at capture
- *        time (when we still hold the live NBT on the server) so the tooltip never has to touch
- *        the raw NBT client-side.</li>
+ *    <li>{@code nbt} — the entity's full save NBT (trades, inventory, attributes), preserved
+ *        verbatim. Release reads it back via {@code loadEntityRecursive} on the server.</li>
+ *    <li>{@code name}/{@code variant}/{@code baby} — display bits precomputed at capture time so
+ *        the tooltip doesn't have to re-parse the NBT each frame.</li>
  *  </ul>
- *  The {@link #STREAM_CODEC network} form sends everything EXCEPT {@code nbt} and reconstructs the
- *  client copy with an empty tag — so a full Containment Box ships its display info, not ten mob
- *  blobs, on every inventory sync. */
+ *  Both the persistent and network forms carry the full data — see {@link #STREAM_CODEC} for why a
+ *  lossy network form is unsafe for an item that lives in inventories. */
 public record ContainedEntity(Identifier type, CompoundTag nbt,
                               Optional<Component> name, Optional<Component> variant, boolean baby) {
 
@@ -40,14 +36,20 @@ public record ContainedEntity(Identifier type, CompoundTag nbt,
             Codec.BOOL.optionalFieldOf("baby", false).forGetter(ContainedEntity::baby)
         ).apply(instance, ContainedEntity::new));
 
-    /** Network (client) form — drops {@code nbt} (decodes it as an empty tag) and ships only the
-     *  display bits. The client never needs the real NBT: it renders tooltip/bar/model, and
-     *  release happens server-side where the persistent copy still has the full tag. */
+    /** Network (client) form — fully symmetric with {@link #CODEC}, INCLUDING {@code nbt}.
+     *
+     *  <p>It MUST be symmetric. A data component is part of an ItemStack's identity, and Minecraft
+     *  validates container interactions by comparing the client's view of a stack against the
+     *  server's. A lossy network form (NBT dropped) makes those two stacks unequal, desyncing
+     *  inventory handling — observed as the stack duplicating on pickup. So we sync the whole tag,
+     *  exactly like vanilla containers (bundles, shulker boxes). The precomputed name/variant/baby
+     *  ride along so the tooltip still avoids re-parsing NBT. */
     public static final StreamCodec<RegistryFriendlyByteBuf, ContainedEntity> STREAM_CODEC =
         StreamCodec.composite(
             Identifier.STREAM_CODEC, ContainedEntity::type,
+            ByteBufCodecs.COMPOUND_TAG, ContainedEntity::nbt,
             ByteBufCodecs.optional(ComponentSerialization.STREAM_CODEC), ContainedEntity::name,
             ByteBufCodecs.optional(ComponentSerialization.STREAM_CODEC), ContainedEntity::variant,
             ByteBufCodecs.BOOL, ContainedEntity::baby,
-            (type, name, variant, baby) -> new ContainedEntity(type, new CompoundTag(), name, variant, baby));
+            ContainedEntity::new);
 }
