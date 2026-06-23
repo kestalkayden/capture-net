@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 import net.minecraft.core.component.DataComponentType;
 
 import com.kestalkayden.capturenet.item.CapturedEntity;
+import com.kestalkayden.capturenet.item.ContainedEntities;
 
 /** Loader-agnostic accessor for the one registered object the shared item logic needs — the
  *  captured-entity data component. Each loader binds this lazy supplier from its own registration
@@ -20,4 +21,8 @@ public final class CaptureNetRefs {
     private CaptureNetRefs() {}
 
     public static Supplier<DataComponentType<CapturedEntity>> CAPTURED_ENTITY;
+
+    /** The Capture Crate's contents component (multi-capacity). Bound per loader, same as
+     *  {@link #CAPTURED_ENTITY}. */
+    public static Supplier<DataComponentType<ContainedEntities>> CONTAINED_ENTITIES;
 }
