@@ -21,7 +21,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
@@ -32,6 +31,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomModelData;
 import net.minecraft.world.item.context.UseOnContext;
 
 import com.kestalkayden.capturenet.CaptureNetRefs;
@@ -69,8 +69,8 @@ public class AnimalCaptureNetItem extends Item {
         }
         if (!isCapturable(stack, target)) return InteractionResult.PASS;
 
-        // 1.21.5 still saves entities to a raw CompoundTag (the ValueOutput abstraction lands in
-        // the 1.21.6+ window). save() writes the full entity including its "id", which is what
+        // 1.21.1 saves entities to a raw CompoundTag (the ValueOutput abstraction lands in the
+        // 1.21.6+ window). save() writes the full entity including its "id", which is what
         // loadEntityRecursive reads back on release.
         CompoundTag nbt = new CompoundTag();
         target.save(nbt);
@@ -82,6 +82,9 @@ public class AnimalCaptureNetItem extends Item {
         // approach: set the vanilla glint-override component rather than overriding isFoil(),
         // which has flaky method-resolution under DataComponent refactors.
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        // 1.21.1 has no item-model definitions, so the empty/filled model swap is driven by a
+        // custom_model_data override in the base model (see models/item/animal_capture_net.json).
+        stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(1));
         // Force the held-item slot to re-sync. In survival the next broadcastChanges
         // catches the component update, but creative mode's client-authoritative
         // inventory can drop it without this prod.
@@ -112,7 +115,7 @@ public class AnimalCaptureNetItem extends Item {
         BlockPos spawnPos = context.getClickedPos().relative(context.getClickedFace());
 
         // Mirror of the save side: load straight from the stored CompoundTag (pre-ValueInput).
-        Entity spawned = EntityType.loadEntityRecursive(captured.entityNbt(), level, EntitySpawnReason.LOAD, e -> {
+        Entity spawned = EntityType.loadEntityRecursive(captured.entityNbt(), level, e -> {
             e.setPos(
                 spawnPos.getX() + 0.5,
                 spawnPos.getY(),
@@ -131,6 +134,7 @@ public class AnimalCaptureNetItem extends Item {
 
         stack.remove(CaptureNetRefs.CAPTURED_ENTITY.get());
         stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
+        stack.remove(DataComponents.CUSTOM_MODEL_DATA);
         if (context.getPlayer() != null) {
             Player p = context.getPlayer();
             p.setItemInHand(context.getHand(), stack);
@@ -165,7 +169,8 @@ public class AnimalCaptureNetItem extends Item {
                 .withStyle(ChatFormatting.GRAY));
             return;
         }
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(captured.entityType());
+        // 1.21.1 registry accessor is get(ResourceLocation) — renamed to getValue() in 1.21.2.
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(captured.entityType());
         if (type == null) return;
 
         CompoundTag nbt = captured.entityNbt();

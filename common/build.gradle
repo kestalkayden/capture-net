@@ -8,11 +8,11 @@ base {
 
 neoForge {
     // Vanilla-mode: compile the shared code against NeoForm-provided Minecraft (official Mojang
-    // names — the same names both Loom and NeoForge see on 1.21.4) with NO loader code on the
+    // names — the same names both Loom and NeoForge see on 1.21.1) with NO loader code on the
     // classpath. This module ships nothing; it's a platform-agnostic purity check that fails the
     // build if shared code accidentally imports a Fabric/NeoForge class. The real jars come from
     // :fabric and :neoforge, which pull these same sources in via sourceSets srcDir.
-    neoFormVersion = "1.21.4-20241203.161809"
+    neoFormVersion = "1.21.1-20240808.144430"
     validateAccessTransformers = false
 }
 
