@@ -18,7 +18,6 @@ import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -35,9 +34,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.storage.TagValueInput;
-import net.minecraft.world.level.storage.TagValueOutput;
-import net.minecraft.world.level.storage.ValueInput;
 
 import com.kestalkayden.capturenet.CaptureNetRefs;
 
@@ -74,13 +70,11 @@ public class AnimalCaptureNetItem extends Item {
         }
         if (!isCapturable(stack, target)) return InteractionResult.PASS;
 
-        // MC 26.1 routes entity save through ValueOutput; TagValueOutput is the CompoundTag-
-        // backed impl. ProblemReporter.DISCARDING silently swallows validation issues —
-        // appropriate here since we trust the entity is well-formed.
-        TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING,
-            target.level().registryAccess());
-        target.save(out);
-        CompoundTag nbt = out.buildResult();
+        // 1.21.5 still saves entities to a raw CompoundTag (the ValueOutput abstraction lands in
+        // the 1.21.6+ window). save() writes the full entity including its "id", which is what
+        // loadEntityRecursive reads back on release.
+        CompoundTag nbt = new CompoundTag();
+        target.save(nbt);
         ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         if (typeId == null) return InteractionResult.PASS;  // Unknown entity type — safety bail
 
@@ -118,9 +112,8 @@ public class AnimalCaptureNetItem extends Item {
         ServerLevel level = (ServerLevel) context.getLevel();
         BlockPos spawnPos = context.getClickedPos().relative(context.getClickedFace());
 
-        // MC 26.2 routes entity load through ValueInput (mirror of the save-side ValueOutput above).
-        ValueInput in = TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), captured.entityNbt());
-        Entity spawned = EntityType.loadEntityRecursive(in, level, EntitySpawnReason.LOAD, e -> {
+        // Mirror of the save side: load straight from the stored CompoundTag (pre-ValueInput).
+        Entity spawned = EntityType.loadEntityRecursive(captured.entityNbt(), level, EntitySpawnReason.LOAD, e -> {
             e.setPos(
                 spawnPos.getX() + 0.5,
                 spawnPos.getY(),
