@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:recipes/root",
+  "rewards": {
+    "recipes": [
+      "capturenet:capture_crate"
+    ]
+  },
+  "criteria": {
+    "has_ender_chest": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          { "items": "minecraft:ender_chest" }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "capturenet:capture_crate"
+      }
+    }
+  },
+  "requirements": [
+    ["has_ender_chest", "has_the_recipe"]
+  ],
+  "sends_telemetry_event": false
+}
