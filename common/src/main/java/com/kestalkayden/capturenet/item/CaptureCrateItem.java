@@ -96,8 +96,8 @@ public class CaptureCrateItem extends Item {
         Identifier typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         if (typeId == null) return InteractionResult.PASS;  // Unknown entity type — safety bail
 
-        // Precompute the cheap display bits now, while we still hold the live NBT server-side, so
-        // the synced (NBT-less) client form can render the tooltip without the heavy tag.
+        // Precompute the display bits now, while we hold the live NBT server-side, so the tooltip
+        // doesn't have to re-parse the NBT each frame.
         Optional<Component> variant = Optional.ofNullable(EntityTooltipAdapters.variantFor(typeId, nbt));
         Optional<Component> name = Optional.ofNullable(readCustomName(target.level().registryAccess(), nbt));
         boolean baby = EntityTooltipAdapters.isBaby(nbt);
@@ -128,7 +128,13 @@ public class CaptureCrateItem extends Item {
 
     @Override
     public InteractionResult useOn(UseOnContext context) {
+        Player player = context.getPlayer();
         ItemStack stack = context.getItemInHand();
+        // Sneaking means "cycle the selection", never release — even when pointed at the ground
+        // (a block hit, which would otherwise land here in useOn instead of use()).
+        if (player != null && player.isShiftKeyDown()) {
+            return cycle(context.getLevel(), player, context.getHand(), stack);
+        }
         ContainedEntities contents = contentsOf(stack);
         if (contents.isEmpty()) return InteractionResult.PASS;
         if (context.getLevel().isClientSide()) return InteractionResult.SUCCESS;
@@ -143,7 +149,19 @@ public class CaptureCrateItem extends Item {
             e.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
             return e;
         });
-        if (spawned == null) return InteractionResult.PASS;
+        if (spawned == null) {
+            // Unspawnable entry — corrupt/legacy data (e.g. a casualty of the earlier desync bug),
+            // or an entity type whose mod is no longer present. Drop it instead of leaving the crate
+            // permanently stuck on it, and tell the player rather than failing silently.
+            applyContents(stack, contents.withSelectedReleased());
+            resync(player, context.getHand(), stack);
+            if (player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.connection.send(new ClientboundSetActionBarTextPacket(
+                    Component.translatable("item.capturenet.capture_crate.discarded")
+                        .withStyle(ChatFormatting.RED)));
+            }
+            return InteractionResult.SUCCESS;
+        }
         if (!level.addFreshEntity(spawned)) return InteractionResult.PASS;
 
         level.sendParticles(ParticleTypes.CLOUD,
@@ -152,14 +170,8 @@ public class CaptureCrateItem extends Item {
         level.playSound(null, spawnPos,
             SoundEvents.BUNDLE_DROP_CONTENTS, SoundSource.PLAYERS, 0.6F, 1.0F);
 
-        ContainedEntities next = contents.withSelectedReleased();
-        if (next.isEmpty()) {
-            stack.remove(CaptureNetRefs.CONTAINED_ENTITIES.get());
-            stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
-        } else {
-            stack.set(CaptureNetRefs.CONTAINED_ENTITIES.get(), next);
-        }
-        resync(context.getPlayer(), context.getHand(), stack);
+        applyContents(stack, contents.withSelectedReleased());
+        resync(player, context.getHand(), stack);
         return InteractionResult.SUCCESS;
     }
 
@@ -167,12 +179,18 @@ public class CaptureCrateItem extends Item {
 
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-        // Sneak + right-click air advances the selection. Without sneak, fall through so the crate
-        // doesn't eat ordinary air right-clicks.
+        // Sneak + right-click air cycles; a plain air right-click does nothing (release is on blocks).
         if (!player.isShiftKeyDown()) return InteractionResult.PASS;
+        return cycle(level, player, hand, player.getItemInHand(hand));
+    }
+
+    /** Advance the selection to the next entity. Consumes the interaction whenever the crate holds
+     *  anything — so a sneak-click never falls through to release or block placement — but only
+     *  actually moves the cursor when there are 2+ entities. */
+    private static InteractionResult cycle(Level level, Player player, InteractionHand hand, ItemStack stack) {
         ContainedEntities contents = contentsOf(stack);
-        if (contents.size() < 2) return InteractionResult.PASS;  // nothing meaningful to cycle
+        if (contents.isEmpty()) return InteractionResult.PASS;       // nothing held — let vanilla handle the click
+        if (contents.size() < 2) return InteractionResult.SUCCESS;   // single occupant — consume, nothing to cycle
         if (level.isClientSide()) return InteractionResult.SUCCESS;
 
         ContainedEntities next = contents.cycled();
@@ -257,6 +275,17 @@ public class CaptureCrateItem extends Item {
     private static ContainedEntities contentsOf(ItemStack stack) {
         ContainedEntities contents = stack.get(CaptureNetRefs.CONTAINED_ENTITIES.get());
         return contents == null ? ContainedEntities.EMPTY : contents;
+    }
+
+    /** Write {@code contents} back to the stack, removing the component (and glint) entirely when
+     *  the crate is now empty so the empty item-model and tooltip kick in. */
+    private static void applyContents(ItemStack stack, ContainedEntities contents) {
+        if (contents.isEmpty()) {
+            stack.remove(CaptureNetRefs.CONTAINED_ENTITIES.get());
+            stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
+        } else {
+            stack.set(CaptureNetRefs.CONTAINED_ENTITIES.get(), contents);
+        }
     }
 
     private static void resync(@Nullable Player player, InteractionHand hand, ItemStack stack) {
