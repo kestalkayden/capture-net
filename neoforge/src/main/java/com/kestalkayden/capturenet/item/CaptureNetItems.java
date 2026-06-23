@@ -18,5 +18,10 @@ public final class CaptureNetItems {
         return new AnimalCaptureNetItem(new Item.Properties().setId(key).stacksTo(1));
     });
 
+    public static final DeferredItem<Item> CAPTURE_CRATE = ITEMS.register("capture_crate", id -> {
+        ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, id);
+        return new CaptureCrateItem(new Item.Properties().setId(key).stacksTo(1));
+    });
+
     private CaptureNetItems() {}
 }

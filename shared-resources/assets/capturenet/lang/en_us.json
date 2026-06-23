@@ -3,6 +3,13 @@
   "item.capturenet.animal_capture_net.tooltip.empty": "Empty — right-click a mob to capture",
   "item.capturenet.animal_capture_net.tooltip.contains": "Contains: %s",
 
+  "item.capturenet.capture_crate": "Capture Crate",
+  "item.capturenet.capture_crate.tooltip.empty": "Empty — right-click mobs to fill",
+  "item.capturenet.capture_crate.tooltip.count": "Holds: %s/%s",
+  "item.capturenet.capture_crate.tooltip.selected": "▶ %s",
+  "item.capturenet.capture_crate.tooltip.cycle_hint": "Sneak + right-click air to cycle",
+  "item.capturenet.capture_crate.selected": "Selected: %s",
+
   "capturenet.tooltip.baby": "baby",
 
   "capturenet.variant.cat.tabby": "Tabby",
