@@ -3,7 +3,7 @@ package com.kestalkayden.capturenet.item;
 import com.kestalkayden.capturenet.CaptureNet;
 
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 
@@ -15,14 +15,14 @@ public final class CaptureNetTags {
      *  Lets modpack authors blocklist modded "bosses" or special encounters. */
     public static final TagKey<EntityType<?>> CANNOT_CAPTURE = TagKey.create(
         Registries.ENTITY_TYPE,
-        Identifier.fromNamespaceAndPath(CaptureNet.MOD_ID, "cannot_capture"));
+        ResourceLocation.fromNamespaceAndPath(CaptureNet.MOD_ID, "cannot_capture"));
 
     /** Entity types in this tag ARE capturable even if their MobCategory is MONSTER. Lets
      *  modpack authors whitelist a modded mob that the modder labeled as MONSTER but the pack
      *  considers safe (e.g. friendly companion mobs). */
     public static final TagKey<EntityType<?>> ALWAYS_CAPTURABLE = TagKey.create(
         Registries.ENTITY_TYPE,
-        Identifier.fromNamespaceAndPath(CaptureNet.MOD_ID, "always_capturable"));
+        ResourceLocation.fromNamespaceAndPath(CaptureNet.MOD_ID, "always_capturable"));
 
     private CaptureNetTags() {}
 }

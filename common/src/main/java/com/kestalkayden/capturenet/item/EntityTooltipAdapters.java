@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.DyeColor;
 
 /** Registry of per-entity variant readers. Vanilla NBT field names vary by entity:
@@ -20,7 +20,7 @@ import net.minecraft.world.item.DyeColor;
  *  weren't paired with a default value during world creation may not have the field at all. */
 public final class EntityTooltipAdapters {
 
-    private static final Map<Identifier, EntityTooltipAdapter> ADAPTERS = new HashMap<>();
+    private static final Map<ResourceLocation, EntityTooltipAdapter> ADAPTERS = new HashMap<>();
 
     static {
         register("sheep", nbt -> {
@@ -71,7 +71,7 @@ public final class EntityTooltipAdapters {
     private EntityTooltipAdapters() {}
 
     private static void register(String mcPath, EntityTooltipAdapter adapter) {
-        ADAPTERS.put(Identifier.fromNamespaceAndPath("minecraft", mcPath), adapter);
+        ADAPTERS.put(ResourceLocation.fromNamespaceAndPath("minecraft", mcPath), adapter);
     }
 
     /** For entities using the modern "variant" ResourceLocation field (e.g. "minecraft:tabby"
@@ -94,7 +94,7 @@ public final class EntityTooltipAdapters {
         return Component.translatable("capturenet.variant." + entityKey + "." + type);
     }
 
-    public static @Nullable Component variantFor(Identifier entityType, CompoundTag nbt) {
+    public static @Nullable Component variantFor(ResourceLocation entityType, CompoundTag nbt) {
         EntityTooltipAdapter a = ADAPTERS.get(entityType);
         return a == null ? null : a.variant(nbt);
     }

@@ -8,7 +8,7 @@ import com.kestalkayden.capturenet.item.CaptureNetDataComponents;
 import com.kestalkayden.capturenet.item.CaptureNetItems;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -30,8 +30,8 @@ public class CaptureNetFabric implements ModInitializer {
         // data component without importing this loader's registration class.
         CaptureNetRefs.CAPTURED_ENTITY = () -> CaptureNetDataComponents.CAPTURED_ENTITY;
 
-        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(output -> {
-            output.accept(CaptureNetItems.ANIMAL_CAPTURE_NET);
+        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> {
+            entries.accept(CaptureNetItems.ANIMAL_CAPTURE_NET);
         });
 
         // Pre-interact hook: runs before entity.interact(), so the net wins against mobs

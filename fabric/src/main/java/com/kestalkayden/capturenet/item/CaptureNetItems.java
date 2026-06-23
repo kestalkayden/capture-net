@@ -5,7 +5,7 @@ import com.kestalkayden.capturenet.CaptureNetFabric;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 
@@ -16,7 +16,7 @@ public final class CaptureNetItems {
     private CaptureNetItems() {}
 
     public static void register() {
-        Identifier id = Identifier.fromNamespaceAndPath(CaptureNetFabric.MOD_ID, "animal_capture_net");
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(CaptureNetFabric.MOD_ID, "animal_capture_net");
         ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, id);
         ANIMAL_CAPTURE_NET = Registry.register(BuiltInRegistries.ITEM, id,
             new AnimalCaptureNetItem(new Item.Properties().setId(key).stacksTo(1)));

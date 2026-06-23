@@ -6,7 +6,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 
 /** Pulls the variant-defining piece of an entity's NBT (sheep color, cat coat, etc.) into
- *  a user-facing label. Registered by entity Identifier in {@link EntityTooltipAdapters}.
+ *  a user-facing label. Registered by entity ResourceLocation in {@link EntityTooltipAdapters}.
  *  Unknown entity types are tolerated — they fall back to no variant prefix. */
 @FunctionalInterface
 public interface EntityTooltipAdapter {

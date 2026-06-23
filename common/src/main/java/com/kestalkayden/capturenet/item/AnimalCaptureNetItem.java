@@ -13,7 +13,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -81,7 +81,7 @@ public class AnimalCaptureNetItem extends Item {
             target.level().registryAccess());
         target.save(out);
         CompoundTag nbt = out.buildResult();
-        Identifier typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
+        ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         if (typeId == null) return InteractionResult.PASS;  // Unknown entity type — safety bail
 
         stack.set(CaptureNetRefs.CAPTURED_ENTITY.get(), new CapturedEntity(typeId, nbt));
