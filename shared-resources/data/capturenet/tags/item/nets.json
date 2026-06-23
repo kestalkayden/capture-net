@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "capturenet:animal_capture_net"
+    "capturenet:animal_capture_net",
+    "capturenet:capture_crate"
   ]
 }

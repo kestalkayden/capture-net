@@ -12,6 +12,7 @@ import net.minecraft.world.item.Item;
 public final class CaptureNetItems {
 
     public static Item ANIMAL_CAPTURE_NET;
+    public static Item CAPTURE_CRATE;
 
     private CaptureNetItems() {}
 
@@ -20,5 +21,10 @@ public final class CaptureNetItems {
         ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, id);
         ANIMAL_CAPTURE_NET = Registry.register(BuiltInRegistries.ITEM, id,
             new AnimalCaptureNetItem(new Item.Properties().setId(key).stacksTo(1)));
+
+        Identifier crateId = Identifier.fromNamespaceAndPath(CaptureNetFabric.MOD_ID, "capture_crate");
+        ResourceKey<Item> crateKey = ResourceKey.create(Registries.ITEM, crateId);
+        CAPTURE_CRATE = Registry.register(BuiltInRegistries.ITEM, crateId,
+            new CaptureCrateItem(new Item.Properties().setId(crateKey).stacksTo(1)));
     }
 }
