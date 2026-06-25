@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /** One entity stored inside a Capture Crate.
  *
@@ -23,13 +23,13 @@ import net.minecraft.resources.Identifier;
  *  </ul>
  *  Both the persistent and network forms carry the full data — see {@link #STREAM_CODEC} for why a
  *  lossy network form is unsafe for an item that lives in inventories. */
-public record ContainedEntity(Identifier type, CompoundTag nbt,
+public record ContainedEntity(ResourceLocation type, CompoundTag nbt,
                               Optional<Component> name, Optional<Component> variant, boolean baby) {
 
     /** Persistent (disk / server) form — round-trips every field, including the heavy {@code nbt}. */
     public static final Codec<ContainedEntity> CODEC = RecordCodecBuilder.create(instance ->
         instance.group(
-            Identifier.CODEC.fieldOf("type").forGetter(ContainedEntity::type),
+            ResourceLocation.CODEC.fieldOf("type").forGetter(ContainedEntity::type),
             CompoundTag.CODEC.fieldOf("nbt").forGetter(ContainedEntity::nbt),
             ComponentSerialization.CODEC.optionalFieldOf("name").forGetter(ContainedEntity::name),
             ComponentSerialization.CODEC.optionalFieldOf("variant").forGetter(ContainedEntity::variant),
@@ -46,7 +46,7 @@ public record ContainedEntity(Identifier type, CompoundTag nbt,
      *  ride along so the tooltip still avoids re-parsing NBT. */
     public static final StreamCodec<RegistryFriendlyByteBuf, ContainedEntity> STREAM_CODEC =
         StreamCodec.composite(
-            Identifier.STREAM_CODEC, ContainedEntity::type,
+            ResourceLocation.STREAM_CODEC, ContainedEntity::type,
             ByteBufCodecs.COMPOUND_TAG, ContainedEntity::nbt,
             ByteBufCodecs.optional(ComponentSerialization.STREAM_CODEC), ContainedEntity::name,
             ByteBufCodecs.optional(ComponentSerialization.STREAM_CODEC), ContainedEntity::variant,
