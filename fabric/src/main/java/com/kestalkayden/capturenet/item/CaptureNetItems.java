@@ -22,7 +22,7 @@ public final class CaptureNetItems {
         ANIMAL_CAPTURE_NET = Registry.register(BuiltInRegistries.ITEM, id,
             new AnimalCaptureNetItem(new Item.Properties().setId(key).stacksTo(1)));
 
-        Identifier crateId = Identifier.fromNamespaceAndPath(CaptureNetFabric.MOD_ID, "capture_crate");
+        ResourceLocation crateId = ResourceLocation.fromNamespaceAndPath(CaptureNetFabric.MOD_ID, "capture_crate");
         ResourceKey<Item> crateKey = ResourceKey.create(Registries.ITEM, crateId);
         CAPTURE_CRATE = Registry.register(BuiltInRegistries.ITEM, crateId,
             new CaptureCrateItem(new Item.Properties().setId(crateKey).stacksTo(1)));
