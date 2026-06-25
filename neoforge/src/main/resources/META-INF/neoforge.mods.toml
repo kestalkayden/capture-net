@@ -17,13 +17,13 @@ logoFile="icon.png"
 [[dependencies.capturenet]]
 modId="neoforge"
 type="required"
-versionRange="[26.1,)"
+versionRange="[21.11.42,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.capturenet]]
 modId="minecraft"
 type="required"
-versionRange="[26.1,26.2)"
+versionRange="[1.21.11,1.21.12)"
 ordering="NONE"
 side="BOTH"
