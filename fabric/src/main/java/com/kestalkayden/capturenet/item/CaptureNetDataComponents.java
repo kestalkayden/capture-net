@@ -25,7 +25,7 @@ public final class CaptureNetDataComponents {
 
         CONTAINED_ENTITIES = Registry.register(
             BuiltInRegistries.DATA_COMPONENT_TYPE,
-            Identifier.fromNamespaceAndPath(CaptureNetFabric.MOD_ID, "contained_entities"),
+            ResourceLocation.fromNamespaceAndPath(CaptureNetFabric.MOD_ID, "contained_entities"),
             DataComponentType.<ContainedEntities>builder()
                 .persistent(ContainedEntities.CODEC)
                 .networkSynchronized(ContainedEntities.STREAM_CODEC)

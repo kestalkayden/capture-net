@@ -1,7 +1,7 @@
 package com.kestalkayden.capturenet.item;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -9,6 +9,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomModelData;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -18,30 +19,25 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.TagValueInput;
-import net.minecraft.world.level.storage.TagValueOutput;
-import net.minecraft.world.level.storage.ValueInput;
 
 import com.kestalkayden.capturenet.CaptureNetRefs;
 
@@ -87,13 +83,10 @@ public class CaptureCrateItem extends Item {
 
         ContainedEntities contents = contentsOf(stack);
 
-        // MC 26.x routes entity save through ValueOutput; TagValueOutput is the CompoundTag-backed
-        // impl. ProblemReporter.DISCARDING silently swallows validation issues (we trust the entity).
-        TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING,
-            target.level().registryAccess());
-        target.save(out);
-        CompoundTag nbt = out.buildResult();
-        Identifier typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
+        // 1.21.1 saves entities to a raw CompoundTag (the ValueOutput abstraction lands at 1.21.6+).
+        CompoundTag nbt = new CompoundTag();
+        target.save(nbt);
+        ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         if (typeId == null) return InteractionResult.PASS;  // Unknown entity type — safety bail
 
         // Precompute the display bits now, while we hold the live NBT server-side, so the tooltip
@@ -105,6 +98,9 @@ public class CaptureCrateItem extends Item {
         ContainedEntities next = contents.withAdded(new ContainedEntity(typeId, nbt, name, variant, baby));
         stack.set(CaptureNetRefs.CONTAINED_ENTITIES.get(), next);
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        // 1.21.1 has no item-model definitions; drive the empty/filled swap via a custom_model_data
+        // override in the base model (see models/item/capture_crate.json), mirroring the net.
+        stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(1));
         resync(player, hand, stack);
 
         ServerLevel level = (ServerLevel) target.level();
@@ -143,9 +139,8 @@ public class CaptureCrateItem extends Item {
         BlockPos spawnPos = context.getClickedPos().relative(context.getClickedFace());
         ContainedEntity release = contents.selectedEntity();
 
-        // Mirror of the save side: load via ValueInput from the stored full tag (server-only).
-        ValueInput in = TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), release.nbt());
-        Entity spawned = EntityType.loadEntityRecursive(in, level, EntitySpawnReason.LOAD, e -> {
+        // Mirror of the save side: load straight from the stored CompoundTag (3-arg pre-EntitySpawnReason).
+        Entity spawned = EntityType.loadEntityRecursive(release.nbt(), level, e -> {
             e.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
             return e;
         });
@@ -178,10 +173,11 @@ public class CaptureCrateItem extends Item {
     // ---- cycle selection --------------------------------------------------------------------
 
     @Override
-    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
         // Sneak + right-click air cycles; a plain air right-click does nothing (release is on blocks).
-        if (!player.isShiftKeyDown()) return InteractionResult.PASS;
-        return cycle(level, player, hand, player.getItemInHand(hand));
+        if (!player.isShiftKeyDown()) return InteractionResultHolder.pass(stack);
+        return new InteractionResultHolder<>(cycle(level, player, hand, stack), stack);
     }
 
     /** Advance the selection to the next entity. Consumes the interaction whenever the crate holds
@@ -232,21 +228,21 @@ public class CaptureCrateItem extends Item {
     // ---- tooltip ----------------------------------------------------------------------------
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display,
-                                 Consumer<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, display, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context,
+                                 List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
         ContainedEntities contents = contentsOf(stack);
         if (contents.isEmpty()) {
-            tooltip.accept(Component.translatable("item.capturenet.capture_crate.tooltip.empty")
+            tooltip.add(Component.translatable("item.capturenet.capture_crate.tooltip.empty")
                 .withStyle(ChatFormatting.GRAY));
             return;
         }
-        tooltip.accept(Component.translatable("item.capturenet.capture_crate.tooltip.count",
+        tooltip.add(Component.translatable("item.capturenet.capture_crate.tooltip.count",
             contents.size(), ContainedEntities.MAX_CAPACITY).withStyle(ChatFormatting.GRAY));
-        tooltip.accept(Component.translatable("item.capturenet.capture_crate.tooltip.selected",
+        tooltip.add(Component.translatable("item.capturenet.capture_crate.tooltip.selected",
             describe(contents.selectedEntity())).withStyle(ChatFormatting.AQUA));
         if (contents.size() > 1) {
-            tooltip.accept(Component.translatable("item.capturenet.capture_crate.tooltip.cycle_hint")
+            tooltip.add(Component.translatable("item.capturenet.capture_crate.tooltip.cycle_hint")
                 .withStyle(ChatFormatting.DARK_GRAY));
         }
     }
@@ -254,7 +250,7 @@ public class CaptureCrateItem extends Item {
     /** Build a "[Name · ][Variant ]EntityType[ · baby]" label from a stored entry. Uses only the
      *  precomputed display fields, so it works client-side without the (server-only) NBT. */
     public static MutableComponent describe(ContainedEntity entry) {
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(entry.type());
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(entry.type());
         MutableComponent label = Component.empty();
         if (entry.name().isPresent()) {
             label.append(entry.name().get()).append(Component.literal(" · "));
@@ -283,6 +279,7 @@ public class CaptureCrateItem extends Item {
         if (contents.isEmpty()) {
             stack.remove(CaptureNetRefs.CONTAINED_ENTITIES.get());
             stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
+            stack.remove(DataComponents.CUSTOM_MODEL_DATA);
         } else {
             stack.set(CaptureNetRefs.CONTAINED_ENTITIES.get(), contents);
         }
