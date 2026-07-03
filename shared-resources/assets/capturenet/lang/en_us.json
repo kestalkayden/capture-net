@@ -2,6 +2,7 @@
   "item.capturenet.animal_capture_net": "Capture Net",
   "item.capturenet.animal_capture_net.tooltip.empty": "Empty — right-click a mob to capture",
   "item.capturenet.animal_capture_net.tooltip.contains": "Contains: %s",
+  "item.capturenet.animal_capture_net.released_empty": "This net's capture was corrupted and has been emptied",
 
   "item.capturenet.capture_crate": "Capture Crate",
   "item.capturenet.capture_crate.tooltip.empty": "Empty — right-click mobs to fill",
