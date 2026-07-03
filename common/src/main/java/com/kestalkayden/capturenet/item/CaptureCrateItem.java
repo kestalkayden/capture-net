@@ -89,9 +89,15 @@ public class CaptureCrateItem extends Item {
 
         // MC 26.x routes entity save through ValueOutput; TagValueOutput is the CompoundTag-backed
         // impl. ProblemReporter.DISCARDING silently swallows validation issues (we trust the entity).
+        //
+        // saveAsPassenger, NOT save(): Entity.save() writes NOTHING and returns false for a
+        // passenger (e.g. a villager riding a minecart), which would store empty NBT and then
+        // discard the mob. saveAsPassenger serializes it regardless of ride state (the discard()
+        // below detaches it from the vehicle); a false return means the entity is genuinely
+        // unserializable — bail WITHOUT discarding so we never delete what we couldn't store.
         TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING,
             target.level().registryAccess());
-        target.save(out);
+        if (!target.saveAsPassenger(out)) return InteractionResult.PASS;
         CompoundTag nbt = out.buildResult();
         ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         if (typeId == null) return InteractionResult.PASS;  // Unknown entity type — safety bail
