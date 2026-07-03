@@ -2,6 +2,8 @@ package com.kestalkayden.capturenet.item;
 
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -13,9 +15,11 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -66,10 +70,18 @@ public class AnimalCaptureNetItem extends Item {
         if (!isCapturable(stack, target)) return InteractionResult.PASS;
 
         // 1.21.1 saves entities to a raw CompoundTag (the ValueOutput abstraction lands in the
-        // 1.21.6+ window). save() writes the full entity including its "id", which is what
-        // loadEntityRecursive reads back on release.
+        // 1.21.6+ window). saveAsPassenger() writes the full entity including its "id", which is
+        // what loadEntityRecursive reads back on release.
+        //
+        // saveAsPassenger, NOT save(): Entity.save() writes NOTHING and returns false for a
+        // passenger (e.g. a villager riding a minecart), which used to store empty NBT and then
+        // discard the mob — leaving an unreleasable net ("contains villager" but does nothing) and
+        // a permanently lost entity. saveAsPassenger serializes the entity regardless of ride state
+        // (it's what vehicles call to persist their riders); the discard() below then cleanly
+        // detaches it from the vehicle. A false return means the entity is genuinely unserializable
+        // (no encode id) — bail out WITHOUT discarding, so we never delete what we couldn't store.
         CompoundTag nbt = new CompoundTag();
-        target.save(nbt);
+        if (!target.saveAsPassenger(nbt)) return InteractionResult.PASS;
         ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         if (typeId == null) return InteractionResult.PASS;  // Unknown entity type — safety bail
 
@@ -108,10 +120,27 @@ public class AnimalCaptureNetItem extends Item {
         if (context.getLevel().isClientSide()) return InteractionResult.SUCCESS;
 
         ServerLevel level = (ServerLevel) context.getLevel();
+        CompoundTag nbt = captured.entityNbt();
+
+        if (!nbt.contains("id")) {
+            // Legacy corrupt capture: before the passenger fix, right-clicking a passenger (e.g. a
+            // villager in a minecart) stored empty NBT and discarded the mob, leaving a net that
+            // reads "contains <mob>" but can never release. The mob is unrecoverable; free the net
+            // so it's usable again instead of staying permanently stuck, and tell the player.
+            clearCapture(stack);
+            resync(context.getPlayer(), context.getHand(), stack);
+            if (context.getPlayer() instanceof ServerPlayer serverPlayer) {
+                serverPlayer.connection.send(new ClientboundSetActionBarTextPacket(
+                    Component.translatable("item.capturenet.animal_capture_net.released_empty")
+                        .withStyle(ChatFormatting.RED)));
+            }
+            return InteractionResult.SUCCESS;
+        }
+
         BlockPos spawnPos = context.getClickedPos().relative(context.getClickedFace());
 
-        // Mirror of the save side: load straight from the stored CompoundTag (pre-ValueInput).
-        Entity spawned = EntityType.loadEntityRecursive(captured.entityNbt(), level, e -> {
+        // Mirror of the save side: load straight from the stored CompoundTag (3-arg pre-EntitySpawnReason).
+        Entity spawned = EntityType.loadEntityRecursive(nbt, level, e -> {
             e.setPos(
                 spawnPos.getX() + 0.5,
                 spawnPos.getY(),
@@ -128,15 +157,25 @@ public class AnimalCaptureNetItem extends Item {
         level.playSound(null, spawnPos,
             SoundEvents.BUNDLE_DROP_CONTENTS, SoundSource.PLAYERS, 0.6F, 1.0F);
 
+        clearCapture(stack);
+        resync(context.getPlayer(), context.getHand(), stack);
+        return InteractionResult.SUCCESS;
+    }
+
+    /** Return the net to empty: drop the captured-entity component, the "loaded" glint cue, and
+     *  (1.21.1 has no item-model definitions) the custom_model_data model-swap override. */
+    private static void clearCapture(ItemStack stack) {
         stack.remove(CaptureNetRefs.CAPTURED_ENTITY.get());
         stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
         stack.remove(DataComponents.CUSTOM_MODEL_DATA);
-        if (context.getPlayer() != null) {
-            Player p = context.getPlayer();
-            p.setItemInHand(context.getHand(), stack);
-            if (p.containerMenu != null) p.containerMenu.broadcastChanges();
-        }
-        return InteractionResult.SUCCESS;
+    }
+
+    /** Push the mutated stack back to the client. Creative's client-authoritative inventory can
+     *  otherwise drop a silent component update. No-op for a null player (e.g. dispenser use). */
+    private static void resync(@Nullable Player player, InteractionHand hand, ItemStack stack) {
+        if (player == null) return;
+        player.setItemInHand(hand, stack);
+        if (player.containerMenu != null) player.containerMenu.broadcastChanges();
     }
 
     private static boolean isCapturable(ItemStack stack, LivingEntity entity) {

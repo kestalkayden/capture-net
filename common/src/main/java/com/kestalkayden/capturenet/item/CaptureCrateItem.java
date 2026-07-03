@@ -84,8 +84,14 @@ public class CaptureCrateItem extends Item {
         ContainedEntities contents = contentsOf(stack);
 
         // 1.21.1 saves entities to a raw CompoundTag (the ValueOutput abstraction lands at 1.21.6+).
+        //
+        // saveAsPassenger, NOT save(): Entity.save() writes NOTHING and returns false for a
+        // passenger (e.g. a villager riding a minecart), which would store empty NBT and then
+        // discard the mob. saveAsPassenger serializes it regardless of ride state (the discard()
+        // below detaches it from the vehicle); a false return means the entity is genuinely
+        // unserializable — bail WITHOUT discarding so we never delete what we couldn't store.
         CompoundTag nbt = new CompoundTag();
-        target.save(nbt);
+        if (!target.saveAsPassenger(nbt)) return InteractionResult.PASS;
         ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         if (typeId == null) return InteractionResult.PASS;  // Unknown entity type — safety bail
 
