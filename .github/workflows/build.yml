@@ -45,6 +45,33 @@ jobs:
       github: ${{ steps.s.outputs.github }}
       release: ${{ steps.s.outputs.release }}
     steps:
+      - uses: actions/checkout@v6
+      # The jar declares its own Minecraft range (from minecraft_version, via the manifests), but
+      # the platforms are told a SEPARATE hardcoded game-versions list. Nothing ties the two
+      # together, so a branch cut from this one that forgets to update game-versions ships a
+      # perfectly good jar advertised under the wrong Minecraft version — the target version gets
+      # no listing at all, and users on the advertised version are handed a jar that refuses to
+      # load. That is exactly what v0.3.0/v0.3.1+mc1.21.11 did: cut from this branch, manifests
+      # updated, game-versions left at 26.1.x. The build is green either way, so this assertion is
+      # the only thing that can catch it — keep it on every branch so new cuts inherit it.
+      - name: assert game-versions match minecraft_version
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re, sys
+          mc = re.search(r'^minecraft_version=(.+)$',
+                         open('gradle.properties').read(), re.M).group(1).strip()
+          wf = open('.github/workflows/build.yml').read()
+          blocks = re.findall(r'game-versions:\s*\|\s*\n((?:[ \t]+[^\s:]+\n)+)', wf)
+          if not blocks:
+              sys.exit('::error::no game-versions blocks found in build.yml')
+          bad = [b.split() for b in blocks if mc not in b.split()]
+          if bad:
+              sys.exit('::error::minecraft_version=%s is missing from %d/%d game-versions block(s) '
+                       '%s — this branch would publish its jar under the wrong Minecraft version.'
+                       % (mc, len(bad), len(blocks), bad))
+          print('OK: minecraft_version=%s listed in all %d game-versions block(s)' % (mc, len(blocks)))
+          PY
       - id: s
         shell: bash
         run: |
