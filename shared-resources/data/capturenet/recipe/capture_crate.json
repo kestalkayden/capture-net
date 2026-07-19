@@ -2,10 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "S": "minecraft:string",
-    "I": "minecraft:iron_ingot",
-    "N": "capturenet:animal_capture_net",
-    "E": "minecraft:ender_chest"
+    "S": { "item": "minecraft:string" },
+    "I": { "item": "minecraft:iron_ingot" },
+    "N": { "item": "capturenet:animal_capture_net" },
+    "E": { "item": "minecraft:ender_chest" }
   },
   "pattern": [
     "SNS",
